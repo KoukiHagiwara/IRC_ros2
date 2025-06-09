@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-#位置推定
 import cv2
 import numpy as np
 
