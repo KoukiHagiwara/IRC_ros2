@@ -84,6 +84,8 @@ def ball():
         #明るさ補正
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
         gray = clahe.apply(gray)
+       # result = clahe.apply(result)
+
 
         #ノイズ除去　ガウシアン
         blurred = cv2.GaussianBlur(gray, (5, 5), 1.4)
@@ -114,7 +116,7 @@ def ball():
         )
         
         REAL_RADIUS_CM = 3.4
-        FOCAL_LENGTH = 514  # キャリブレーションから得た値
+        FOCAL_LENGTH = 1029  # キャリブレーションから得た値
         min_distance = float('inf')
         nearest_circle = None
 
@@ -133,9 +135,10 @@ def ball():
 
         if nearest_circle:
             x, y, r, dist = nearest_circle
+            dist_m = dist / 100.0
             cv2.circle(result, (x, y), r, (0, 255, 0), 2)
             cv2.circle(result, (x, y), 2, (0, 0, 255), 3)
-            cv2.putText(result, f"{dist:.1f} cm", (x - 40, y - r - 10),
+            cv2.putText(result, f"{dist_m:.2f} m", (x - 40, y - r - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
         # 結果を表示
