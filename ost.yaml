@@ -1,0 +1,26 @@
+image_width: 640
+image_height: 480
+camera_name: c270
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [726.31717,   0.     , 321.76082,
+           0.     , 729.02841, 247.17583,
+           0.     ,   0.     ,   1.     ]
+distortion_model: plumb_bob
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [0.144383, -0.161495, 0.001089, -0.000402, 0.000000]
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [1., 0., 0.,
+         0., 1., 0.,
+         0., 0., 1.]
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [746.91547,   0.     , 321.53481,   0.     ,
+           0.     , 749.76664, 247.48295,   0.     ,
+           0.     ,   0.     ,   1.     ,   0.     ]

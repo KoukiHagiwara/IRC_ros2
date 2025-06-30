@@ -60,7 +60,8 @@ def ball():
         gray = clahe.apply(gray)
 
         #ノイズ除去　ガウシアン
-        blurred = cv2.GaussianBlur(gray, (5, 5), 1.4)
+       # blurred = cv2.GaussianBlur(gray, (5, 5), 1.4)
+        blurred = cv2.GaussianBlur(gray, (3, 3), 1.4)
 
         th1=50
         th2=100
@@ -71,10 +72,11 @@ def ball():
         #モルフォロジー
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         gradient = cv2.morphologyEx(edges, cv2.MORPH_GRADIENT, kernel, iterations=2)
-        
+
                 # --- 円検出 ---
         circles = cv2.HoughCircles(
-            blurred,                      # 入力画像（グレースケール）
+           # blurred,
+            gradient,# 入力画像（グレースケール）
             cv2.HOUGH_GRADIENT,           # 検出手法
             dp=1,                       # 解像度の逆数（1.2が一般的）
             minDist=30,                   # 検出する円同士の最小距離
