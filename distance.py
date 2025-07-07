@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 #位置推定
+#平均半径で計算
+
 import cv2
 import numpy as np
 
@@ -29,6 +31,8 @@ def ball():
     cap = cv2.VideoCapture(2)
     cap.set(3, 640)  # 幅
     cap.set(4, 480)  # 高さ
+
+    r_list = []
 
     while True:
         ret, img = cap.read()  # フレームを取得
@@ -118,7 +122,7 @@ def ball():
         )
         
         REAL_RADIUS_CM = 3.4
-        FOCAL_LENGTH = 727.7  # キャリブレーションから得た値
+        FOCAL_LENGTH = 727.665  # キャリブレーションから得た値
         min_distance = float('inf')
         nearest_circle = None
 
@@ -128,12 +132,21 @@ def ball():
             for i in circles[0, :]:
                 x, y, r = i[0], i[1], i[2]
 
+                # r を履歴に追加
+                r_list.append(r)
+                if len(r_list) > 5:
+                    r_list.pop(0)
+
+                # 一定数以上あれば平均半径を使用して距離計算
+                if len(r_list) >= 3:
+                    avg_r = np.mean(r_list)
+
                 # 距離を計算
-                if r > 0:
-                    distance_cm = (REAL_RADIUS_CM * FOCAL_LENGTH) / r
-                    if distance_cm < min_distance:
-                        min_distance = distance_cm
-                        nearest_circle = (x, y, r, distance_cm)
+                    if avg_r > 0:
+                        distance_cm = (REAL_RADIUS_CM * FOCAL_LENGTH) / avg_r
+                        if distance_cm < min_distance:
+                            min_distance = distance_cm
+                            nearest_circle = (x, y, int(avg_r), distance_cm)
 
         if nearest_circle:
             x, y, r, dist = nearest_circle
