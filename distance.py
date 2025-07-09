@@ -122,7 +122,8 @@ def ball():
         )
         
         REAL_RADIUS_CM = 3.4
-        FOCAL_LENGTH = 727.665  # キャリブレーションから得た値
+       # FOCAL_LENGTH = 727.665  # キャリブレーションから得た値
+        FOCAL_LENGTH = 718.409779
         min_distance = float('inf')
         nearest_circle = None
 
