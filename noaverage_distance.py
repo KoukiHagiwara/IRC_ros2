@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 
-#位置推定
-#平均半径で計算
+# csvファイルを作成_30回の平均データを取って
 
+#位置推定
 import cv2
+import csv
 import numpy as np
 
 
@@ -32,7 +33,7 @@ def ball():
     cap.set(3, 640)  # 幅
     cap.set(4, 480)  # 高さ
 
-    r_list = []
+    data_list = []
 
     while True:
         ret, img = cap.read()  # フレームを取得
@@ -122,9 +123,9 @@ def ball():
         )
         
         REAL_RADIUS_CM = 3.4
-       # FOCAL_LENGTH = 727.665  # キャリブレーションから得た値
+       # FOCAL_LENGTH = 727.672791      # キャリブレーションから得た値
+       # FOCAL_LENGTH = 711.1980785
         FOCAL_LENGTH = 718.409779
-       # FOCAL_LENGTH = 736.393478
         min_distance = float('inf')
         nearest_circle = None
 
@@ -134,21 +135,12 @@ def ball():
             for i in circles[0, :]:
                 x, y, r = i[0], i[1], i[2]
 
-                # r を履歴に追加
-                r_list.append(r)
-                if len(r_list) > 5:
-                    r_list.pop(0)
-
-                # 一定数以上あれば平均半径を使用して距離計算
-                if len(r_list) >= 3:
-                    avg_r = np.mean(r_list)
-
                 # 距離を計算
-                    if avg_r > 0:
-                        distance_cm = (REAL_RADIUS_CM * FOCAL_LENGTH) / avg_r
-                        if distance_cm < min_distance:
-                            min_distance = distance_cm
-                            nearest_circle = (x, y, int(avg_r), distance_cm)
+                if r > 0:
+                    distance_cm = (REAL_RADIUS_CM * FOCAL_LENGTH) / r
+                    if distance_cm < min_distance:
+                        min_distance = distance_cm
+                        nearest_circle = (x, y, r, distance_cm)
 
         if nearest_circle:
             x, y, r, dist = nearest_circle
@@ -157,6 +149,18 @@ def ball():
             cv2.circle(result, (x, y), 2, (0, 0, 255), 3)
             cv2.putText(result, f"{dist_m:.2f} m", (x - 40, y - r - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+             #距離を保存
+            data_list.append(dist_m)  # 距離を保存（m単位）
+
+        # --- 30回で保存して終了 ---
+        if len(data_list) >= 100:
+            with open("distance_data0.7.1.csv", "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["frame", "distance_m"])
+                for i, d in enumerate(data_list):
+                    writer.writerow([i+1, d])
+            print("CSV出力完了: distance_data0.6.csv")
+            break    
 
         # 結果を表示
         cv2.imshow('Original', img)    # 元画像

@@ -32,6 +32,7 @@ def ball():
     cap.set(4, 480)  # 高さ
 
     data_list = []
+    r_list = []
 
     while True:
         ret, img = cap.read()  # フレームを取得
@@ -124,6 +125,7 @@ def ball():
        # FOCAL_LENGTH = 727.672791      # キャリブレーションから得た値
        # FOCAL_LENGTH = 711.1980785
         FOCAL_LENGTH = 718.409779
+       # FOCAL_LENGTH = 736.393478
         min_distance = float('inf')
         nearest_circle = None
 
@@ -132,13 +134,21 @@ def ball():
             circles = np.uint16(np.around(circles))  # 四捨五入して整数化
             for i in circles[0, :]:
                 x, y, r = i[0], i[1], i[2]
+                
+                # r を履歴に追加
+                r_list.append(r)
+                if len(r_list) > 5:
+                    r_list.pop(0)
 
-                # 距離を計算
-                if r > 0:
-                    distance_cm = (REAL_RADIUS_CM * FOCAL_LENGTH) / r
-                    if distance_cm < min_distance:
-                        min_distance = distance_cm
-                        nearest_circle = (x, y, r, distance_cm)
+                # 一定数以上あれば平均半径を使用して距離計算
+                if len(r_list) >= 3:
+                    avg_r = np.mean(r_list)
+                    # 距離を計算
+                    if avg_r > 0:
+                        distance_cm = (REAL_RADIUS_CM * FOCAL_LENGTH) / avg_r
+                        if distance_cm < min_distance:
+                            min_distance = distance_cm
+                            nearest_circle = (x, y, int(avg_r), distance_cm)
 
         if nearest_circle:
             x, y, r, dist = nearest_circle
@@ -152,7 +162,7 @@ def ball():
 
         # --- 30回で保存して終了 ---
         if len(data_list) >= 100:
-            with open("distance_data0.6.csv", "w", newline="") as f:
+            with open("distance_data0.7.csv", "w", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow(["frame", "distance_m"])
                 for i, d in enumerate(data_list):

@@ -68,15 +68,16 @@ def ball():
 
         # Cannyエッジ検出(輪郭を検出)
         edges = cv2.Canny(blurred, th1, th2)
+       # edges = cv2.Canny(gray, th1, th2)
 
         #モルフォロジー
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        gradient = cv2.morphologyEx(edges, cv2.MORPH_GRADIENT, kernel, iterations=2)
+       # kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+       # gradient = cv2.morphologyEx(edges, cv2.MORPH_GRADIENT, kernel, iterations=2)
 
                 # --- 円検出 ---
         circles = cv2.HoughCircles(
            # blurred,
-            gradient,# 入力画像（グレースケール）
+            edges,# 入力画像（グレースケール）
             cv2.HOUGH_GRADIENT,           # 検出手法
             dp=1,                       # 解像度の逆数（1.2が一般的）
             minDist=30,                   # 検出する円同士の最小距離
@@ -98,7 +99,7 @@ def ball():
         # 結果を表示
         cv2.imshow('Original', img)    # 元画像
         cv2.imshow('Mask', result)     # 色抽出結果
-        cv2.imshow("Edge on Mask", gradient)
+        cv2.imshow("Edge on Mask", edges)
 
         # Escキー（ASCIIコード27）を押すと終了
         k = cv2.waitKey(10)

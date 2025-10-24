@@ -2,6 +2,7 @@
 
 #位置推定
 #平均半径で計算
+#距離と色の結果を画面に表示
 
 import cv2
 import numpy as np
@@ -16,11 +17,11 @@ cv2.namedWindow('HSV')
 
 # トラックバーを作成（各値はHSVの範囲に基づく）
 cv2.createTrackbar("H_l", "HSV", 0, 180, nothing)     # 色相の下限
-cv2.createTrackbar("H_h", "HSV", 180, 180, nothing)   # 色相の上限
+cv2.createTrackbar("H_h", "HSV", 180, 180, nothing)    # 色相の上限
 cv2.createTrackbar("S_l", "HSV", 0, 255, nothing)     # 彩度の下限
-cv2.createTrackbar("S_h", "HSV", 255, 255, nothing)   # 彩度の上限
+cv2.createTrackbar("S_h", "HSV", 255, 255, nothing)    # 彩度の上限
 cv2.createTrackbar("V_l", "HSV", 0, 255, nothing)     # 明度の下限
-cv2.createTrackbar("V_h", "HSV", 255, 255, nothing)   # 明度の上限
+cv2.createTrackbar("V_h", "HSV", 255, 255, nothing)    # 明度の上限
 
 cv2.createTrackbar("Threshold1", "HSV", 50, 500, nothing)
 cv2.createTrackbar("Threshold2", "HSV", 150, 500, nothing)
@@ -91,7 +92,7 @@ def ball():
        # result = clahe.apply(result)
 
 
-        #ノイズ除去　ガウシアン
+        #ノイズ除去s　ガウシアン
         blurred = cv2.GaussianBlur(gray, (5, 5), 1.4)
 
 
@@ -107,18 +108,18 @@ def ball():
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         gradient = cv2.morphologyEx(edges, cv2.MORPH_GRADIENT, kernel, iterations=1)
         
-                # --- 円検出 ---
+               # --- 円検出 ---
         circles = cv2.HoughCircles(
-           # blurred,                      # 入力画像（グレースケール）
+            # blurred,                     # 入力画像（グレースケール）
             gradient,
             #edges,
-            cv2.HOUGH_GRADIENT,           # 検出手法
-            dp=1,                       # 解像度の逆数（1.2が一般的）
-            minDist=30,                   # 検出する円同士の最小距離
-            param1=th2,                   # Cannyの上限値
-            param2=35,                    # 円検出のしきい値（小さくすると検出しやすくなるが誤検出が増える）
-            minRadius=25,                  # 最小円半径
-            maxRadius=130                 # 最大円半径
+            cv2.HOUGH_GRADIENT,          # 検出手法
+            dp=1,                        # 解像度の逆数（1.2が一般的）
+            minDist=30,                  # 検出する円同士の最小距離
+            param1=th2,                  # Cannyの上限値
+            param2=35,                   # 円検出のしきい値（小さくすると検出しやすくなるが誤検出が増える）
+            minRadius=25,                # 最小円半径
+            maxRadius=130                # 最大円半径
         )
         
         REAL_RADIUS_CM = 3.4
@@ -134,6 +135,26 @@ def ball():
             for i in circles[0, :]:
                 x, y, r = i[0], i[1], i[2]
 
+                ### 変更点：ここから ###
+                # 検出した円の中心(x, y)がどの色のマスク上にあるかをチェック
+                # (y, x)の順でアクセスすることに注意
+                color_label = "Unknown"
+                draw_color = (0, 255, 0) # デフォルトは緑
+                
+                # 座標が画像の範囲内にあるか確認
+                img_h, img_w = mask_blue.shape
+                if y < img_h and x < img_w:
+                    if mask_blue[y, x] > 0:
+                        color_label = "Blue"
+                        draw_color = (255, 0, 0)
+                    elif mask_yellow[y, x] > 0:
+                        color_label = "Yellow"
+                        draw_color = (0, 255, 255)
+                    elif mask_red[y, x] > 0:
+                        color_label = "Red"
+                        draw_color = (0, 0, 255)
+                ### 変更点：ここまで ###
+
                 # r を履歴に追加
                 r_list.append(r)
                 if len(r_list) > 5:
@@ -143,24 +164,39 @@ def ball():
                 if len(r_list) >= 3:
                     avg_r = np.mean(r_list)
 
-                # 距離を計算
+                    # 距離を計算
                     if avg_r > 0:
                         distance_cm = (REAL_RADIUS_CM * FOCAL_LENGTH) / avg_r
                         if distance_cm < min_distance:
                             min_distance = distance_cm
-                            nearest_circle = (x, y, int(avg_r), distance_cm)
+                            ### 変更点：nearest_circleに色情報も保存 ###
+                            nearest_circle = (x, y, int(avg_r), distance_cm, color_label, draw_color)
 
         if nearest_circle:
-            x, y, r, dist = nearest_circle
+            ### 変更点：保存した色情報を展開 ###
+            x, y, r, dist, color_label, draw_color = nearest_circle
+            
             dist_m = dist / 100.0
-            cv2.circle(result, (x, y), r, (0, 255, 0), 2)
+            
+            ### 変更点：色情報を使って描画 ###
+            # 円を描画 (検出した色で)
+            cv2.circle(result, (x, y), r, draw_color, 2)
+            # 中点を描画
             cv2.circle(result, (x, y), 2, (0, 0, 255), 3)
-            cv2.putText(result, f"{dist_m:.2f} m", (x - 40, y - r - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            
+            # 距離テキスト
+            dist_text = f"{dist_m:.2f} m"
+            cv2.putText(result, dist_text, (x - 40, y - r - 30), # Y座標を少し上に
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+            # 色名テキスト (検出した色で)
+            cv2.putText(result, color_label, (x - 20, y - r - 10), # 距離テキストの下に
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, draw_color, 2)
+            ### 変更点：ここまで ###
 
         # 結果を表示
         cv2.imshow('Original', img)    # 元画像
-        cv2.imshow('Mask', result)     # 色抽出結果
+        cv2.imshow('Mask', result)     # 色抽出と円検出結果
         cv2.imshow("Edge on Mask", gradient)
 
         # Escキー（ASCIIコード27）を押すと終了
