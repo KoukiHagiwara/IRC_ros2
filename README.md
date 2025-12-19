@@ -14,6 +14,6 @@ $ ./detector.py
 検出距離をcsvファイルへ保存させるコード
 - これを使いどのくらいの誤差があるかを表す正規分布を作ることも可能
 ```
-$ .csv_/distance.py
+$ ./csv_distance.py
 ```
 
